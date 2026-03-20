@@ -209,7 +209,6 @@ Contributions are welcome!
 - [ ] Custom screen region selector (drag-to-select)
 - [ ] Audio reactive mode (mic input → color)
 - [ ] WLED / Govee / Tapo protocol support
-- [ ] PyInstaller `.exe` build guide
 
 ---
 
