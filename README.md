@@ -1,6 +1,6 @@
 <div align="center">
 
-# 💡 AmbieZ
+# 💡 AmbienZ
 
 ### Real-Time Screen-to-WiZ Ambient Lighting Sync
 
@@ -28,7 +28,7 @@
 | 🖥️ **Multi-Monitor** | Select which display to capture from a dropdown |
 | 💡 **Brightness Control** | Adjustable max brightness sent directly to the bulb |
 | 🔔 **System Tray** | Minimize to tray and run silently in the background |
-| 💾 **Config Persistence** | All settings auto-saved/loaded from `ambiez_config.json` |
+| 💾 **Config Persistence** | All settings auto-saved/loaded from `AmbienZ_config.json` |
 
 ---
 
@@ -45,8 +45,8 @@
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/yourusername/ambiez.git
-cd ambiez
+git clone https://github.com/ishendrarai/AmbienZ.git
+cd AmbienZ
 ```
 
 ### 2. Install dependencies
@@ -101,7 +101,7 @@ Weights pixels near the edges and borders of the screen more heavily. Great for 
 
 ## ⚙️ Configuration
 
-Settings are auto-saved to `ambiez_config.json` next to `main.py` whenever the app closes. The file is loaded automatically on next launch.
+Settings are auto-saved to `AmbienZ_config.json` next to `main.py` whenever the app closes. The file is loaded automatically on next launch.
 
 | Key | Description |
 |-----|-------------|
@@ -116,7 +116,7 @@ Settings are auto-saved to `ambiez_config.json` next to `main.py` whenever the a
 
 ## 🧠 How It Works
 
-AmbieZ runs a high-frequency capture loop in a background thread (QThread):
+AmbienZ runs a high-frequency capture loop in a background thread (QThread):
 
 ```
 Screen Frame (mss)
@@ -149,10 +149,10 @@ The WiZ protocol is a simple JSON-over-UDP API on port `38899`. No cloud require
 
 ## 🔔 System Tray
 
-Minimizing the window hides AmbieZ to the system tray — sync continues running in the background. A notification confirms it's still active.
+Minimizing the window hides AmbienZ to the system tray — sync continues running in the background. A notification confirms it's still active.
 
 - **Double-click** the tray icon to restore the window
-- **Right-click** for a menu with *Show Settings* and *Quit AmbieZ*
+- **Right-click** for a menu with *Show Settings* and *Quit AmbienZ*
 
 ---
 
@@ -174,7 +174,7 @@ Minimizing the window hides AmbieZ to the system tray — sync continues running
 ## 📡 Finding Your Bulb's IP
 
 ### Option 1 — Use the Scan button *(easiest)*
-Click **🔍 Scan** in the UI. AmbieZ broadcasts a UDP packet and auto-populates discovered bulbs with their IP and MAC address.
+Click **🔍 Scan** in the UI. AmbienZ broadcasts a UDP packet and auto-populates discovered bulbs with their IP and MAC address.
 
 ### Option 2 — WiZ mobile app
 `App → Device → Settings → Device Info → IP Address`
