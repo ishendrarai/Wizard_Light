@@ -7,13 +7,17 @@ import numpy as np
 import cv2
 import mss
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
-                               QHBoxLayout, QSlider, QLabel, QPushButton,
+                               QSlider, QLabel, QPushButton,
                                QGroupBox, QComboBox, QFrame, QSystemTrayIcon,
                                QMenu, QStyle)
-from PySide6.QtGui import QAction, QIcon
+from PySide6.QtGui import QAction
 from PySide6.QtCore import Qt, QThread, Signal, Slot, QEvent
 
 CONFIG_FILE = "lightwiz_config.json"
+
+# ---> SET YOUR BULB IP HERE <---
+BULB_IP = "192.168.0.100"
+BULB_PORT = 38899
 
 
 # --- COLOR SCIENCE UTILS ---
@@ -25,45 +29,6 @@ def to_srgb(linear_color):
     return np.power(np.clip(linear_color, 0, 1), 1 / 2.2) * 255
 
 
-# --- DISCOVERY LOGIC ---
-class WizDiscovery:
-    def __init__(self, timeout=1.5):
-        self.port_send = 38899
-        self.port_recv = 38900
-        self.timeout = timeout
-
-    def scan(self):
-        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
-        sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-        sock.settimeout(self.timeout)
-        message = json.dumps({"method": "getSystemConfig", "params": {}})
-        bulbs = []
-        try:
-            sock.sendto(message.encode(), ('255.255.255.255', self.port_send))
-            while True:
-                data, addr = sock.recvfrom(1024)
-                resp = json.loads(data.decode())
-                if "result" in resp:
-                    bulbs.append({"ip": addr[0], "mac": resp["result"].get("mac", "Unknown")})
-        except (socket.timeout, json.JSONDecodeError):
-            pass
-        finally:
-            sock.close()
-        return bulbs
-
-
-class DiscoveryWorker(QThread):
-    finished_signal = Signal(list)
-
-    def __init__(self, discoverer):
-        super().__init__()
-        self.discoverer = discoverer
-
-    def run(self):
-        bulbs = self.discoverer.scan()
-        self.finished_signal.emit(bulbs)
-
-
 # --- CORE SYNC ENGINE ---
 class SyncWorker(QThread):
     preview_signal = Signal(dict)
@@ -73,12 +38,10 @@ class SyncWorker(QThread):
         self.running = False
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.params = {
-            "ip": "127.0.0.1",
-            "port": 38899,
             "fps": 40,
             "saturation": 1.4,
             "smoothness": 0.6,
-            "brightness": 100,  # Added Brightness
+            "brightness": 100,
             "mode": "Dominant",
             "clusters": 3,
             "dark_threshold": 20,
@@ -152,11 +115,10 @@ class SyncWorker(QThread):
 
     def send_to_wiz(self, rgb):
         r, g, b = np.clip(rgb, 0, 255)
-        # Included dynamic brightness in the payload here
         payload = {"method": "setPilot",
                    "params": {"r": int(r), "g": int(g), "b": int(b), "dimming": int(self.params["brightness"])}}
         try:
-            self.sock.sendto(json.dumps(payload).encode(), (self.params["ip"], self.params["port"]))
+            self.sock.sendto(json.dumps(payload).encode(), (BULB_IP, BULB_PORT))
         except Exception:
             pass
 
@@ -166,11 +128,8 @@ class LightWizUI(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("LightWiz Pro")
-        self.setMinimumWidth(550)
+        self.setMinimumWidth(450)
         self.worker = SyncWorker()
-        self.discoverer = WizDiscovery()
-        self.discovery_thread = DiscoveryWorker(self.discoverer)
-        self.discovery_thread.finished_signal.connect(self.on_scan_finished)
 
         central = QWidget()
         self.setCentralWidget(central)
@@ -179,29 +138,20 @@ class LightWizUI(QMainWindow):
 
         self.setup_ui()
         self.setup_tray()
-        self.load_config()  # Load saved settings
+        self.load_config()
 
         self.worker.preview_signal.connect(self.update_ui)
         self.setStyleSheet(self.get_theme())
 
     def setup_ui(self):
-        dev_group = QGroupBox("1. Device Management")
-        dev_layout = QHBoxLayout(dev_group)
-        self.bulb_combo = QComboBox()
-        self.bulb_combo.setMinimumWidth(200)
-        self.btn_scan = QPushButton("🔍 Scan")
-        self.btn_scan.clicked.connect(self.scan_bulbs)
-        dev_layout.addWidget(QLabel("Bulb:"))
-        dev_layout.addWidget(self.bulb_combo)
-        dev_layout.addWidget(self.btn_scan)
-        self.layout.addWidget(dev_group)
-
+        # Preview Panel
         self.preview_frame = QFrame()
         self.preview_frame.setFixedHeight(80)
         self.preview_frame.setObjectName("preview")
         self.layout.addWidget(self.preview_frame)
 
-        ctrl_group = QGroupBox("2. Settings")
+        # Control Group
+        ctrl_group = QGroupBox("Settings")
         ctrl_layout = QVBoxLayout(ctrl_group)
 
         self.monitor_combo = QComboBox()
@@ -214,7 +164,6 @@ class LightWizUI(QMainWindow):
         ctrl_layout.addWidget(QLabel("Select Monitor:"))
         ctrl_layout.addWidget(self.monitor_combo)
 
-        # Added Brightness Slider
         self.bright_slider = self.add_labeled_slider(ctrl_layout, "Max Brightness", 10, 100, 100)
         self.sat_slider = self.add_labeled_slider(ctrl_layout, "Saturation Boost", 10, 30, 14)
         self.smooth_slider = self.add_labeled_slider(ctrl_layout, "Smoothing", 0, 99, 60)
@@ -227,7 +176,8 @@ class LightWizUI(QMainWindow):
 
         self.layout.addWidget(ctrl_group)
 
-        self.status_label = QLabel("Ready. Select a bulb to begin.")
+        # Footer
+        self.status_label = QLabel(f"Ready. Target IP: {BULB_IP}")
         self.btn_toggle = QPushButton("START SYNC")
         self.btn_toggle.setObjectName("startBtn")
         self.btn_toggle.setCheckable(True)
@@ -238,7 +188,6 @@ class LightWizUI(QMainWindow):
 
     def setup_tray(self):
         self.tray_icon = QSystemTrayIcon(self)
-        # Fallback icon using built-in PySide6 standard icons
         icon = self.style().standardIcon(QStyle.StandardPixmap.SP_ComputerIcon)
         self.tray_icon.setIcon(icon)
 
@@ -259,7 +208,6 @@ class LightWizUI(QMainWindow):
         if reason == QSystemTrayIcon.ActivationReason.DoubleClick:
             self.showNormal()
 
-    # Override minimize to hide to tray instead
     def changeEvent(self, event):
         if event.type() == QEvent.Type.WindowStateChange:
             if self.windowState() & Qt.WindowState.WindowMinimized:
@@ -270,7 +218,6 @@ class LightWizUI(QMainWindow):
                 return
         super().changeEvent(event)
 
-    # Save configuration when app is closed entirely
     def closeEvent(self, event):
         self.save_config()
         self.worker.running = False
@@ -278,7 +225,6 @@ class LightWizUI(QMainWindow):
         event.accept()
 
     def add_labeled_slider(self, layout, name, mn, mx, val):
-        # Adjusted label display to handle the 1-100 scale for brightness vs 0.1-3.0 for others
         is_percent = (mx == 100 and mn == 10)
         lbl_text = f"{name}: {val if is_percent else (val / 10 if mx == 30 else val / 100)}"
         lbl = QLabel(lbl_text)
@@ -295,27 +241,11 @@ class LightWizUI(QMainWindow):
         layout.addWidget(slider)
         return slider
 
-    def scan_bulbs(self):
-        self.btn_scan.setEnabled(False)
-        self.status_label.setText("Scanning network... (Background)")
-        self.discovery_thread.start()
-
-    @Slot(list)
-    def on_scan_finished(self, bulbs):
-        self.btn_scan.setEnabled(True)
-        self.bulb_combo.clear()
-        for b in bulbs:
-            self.bulb_combo.addItem(f"{b['ip']} ({b['mac']})", b['ip'])
-        self.status_label.setText(f"Scan complete. Found {len(bulbs)} bulbs.")
-        self.sync_params()
-
     def load_config(self):
         if os.path.exists(CONFIG_FILE):
             try:
                 with open(CONFIG_FILE, "r") as f:
                     config = json.load(f)
-                if config.get("bulb_ip"):
-                    self.bulb_combo.addItem(f"Saved: {config['bulb_ip']}", config['bulb_ip'])
                 if config.get("monitor_idx") is not None:
                     idx = self.monitor_combo.findData(config["monitor_idx"])
                     if idx >= 0: self.monitor_combo.setCurrentIndex(idx)
@@ -328,7 +258,6 @@ class LightWizUI(QMainWindow):
 
     def save_config(self):
         config = {
-            "bulb_ip": self.bulb_combo.currentData(),
             "monitor_idx": self.monitor_combo.currentData(),
             "brightness": self.bright_slider.value(),
             "saturation": self.sat_slider.value(),
@@ -344,7 +273,6 @@ class LightWizUI(QMainWindow):
     def sync_params(self):
         monitor_data = self.monitor_combo.currentData()
         self.worker.params.update({
-            "ip": self.bulb_combo.currentData() or "127.0.0.1",
             "brightness": self.bright_slider.value(),
             "saturation": self.sat_slider.value() / 10.0,
             "smoothness": self.smooth_slider.value() / 100.0,
@@ -354,10 +282,6 @@ class LightWizUI(QMainWindow):
 
     def toggle_engine(self):
         if self.btn_toggle.isChecked():
-            if not self.bulb_combo.currentData():
-                self.btn_toggle.setChecked(False)
-                self.status_label.setText("Error: No bulb selected!")
-                return
             self.sync_params()
             self.worker.start()
             self.btn_toggle.setText("STOP SYNC")
