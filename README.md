@@ -1,6 +1,6 @@
 <div align="center">
 
-# 💡 LightWiz Pro
+# 💡 AmbieZ
 
 ### Real-Time Screen-to-WiZ Ambient Lighting Sync
 
@@ -28,7 +28,7 @@
 | 🖥️ **Multi-Monitor** | Select which display to capture from a dropdown |
 | 💡 **Brightness Control** | Adjustable max brightness sent directly to the bulb |
 | 🔔 **System Tray** | Minimize to tray and run silently in the background |
-| 💾 **Config Persistence** | All settings auto-saved/loaded from `lightwiz_config.json` |
+| 💾 **Config Persistence** | All settings auto-saved/loaded from `ambiez_config.json` |
 
 ---
 
@@ -45,8 +45,8 @@
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/yourusername/lightwiz.git
-cd lightwiz
+git clone https://github.com/yourusername/ambiez.git
+cd ambiez
 ```
 
 ### 2. Install dependencies
@@ -101,7 +101,7 @@ Weights pixels near the edges and borders of the screen more heavily. Great for 
 
 ## ⚙️ Configuration
 
-Settings are auto-saved to `lightwiz_config.json` next to `main.py` whenever the app closes. The file is loaded automatically on next launch.
+Settings are auto-saved to `ambiez_config.json` next to `main.py` whenever the app closes. The file is loaded automatically on next launch.
 
 | Key | Description |
 |-----|-------------|
@@ -116,7 +116,7 @@ Settings are auto-saved to `lightwiz_config.json` next to `main.py` whenever the
 
 ## 🧠 How It Works
 
-LightWiz runs a high-frequency capture loop in a background thread (QThread):
+AmbieZ runs a high-frequency capture loop in a background thread (QThread):
 
 ```
 Screen Frame (mss)
@@ -149,10 +149,10 @@ The WiZ protocol is a simple JSON-over-UDP API on port `38899`. No cloud require
 
 ## 🔔 System Tray
 
-Minimizing the window hides LightWiz to the system tray — sync continues running in the background. A notification confirms it's still active.
+Minimizing the window hides AmbieZ to the system tray — sync continues running in the background. A notification confirms it's still active.
 
 - **Double-click** the tray icon to restore the window
-- **Right-click** for a menu with *Show Settings* and *Quit LightWiz*
+- **Right-click** for a menu with *Show Settings* and *Quit AmbieZ*
 
 ---
 
@@ -174,7 +174,7 @@ Minimizing the window hides LightWiz to the system tray — sync continues runni
 ## 📡 Finding Your Bulb's IP
 
 ### Option 1 — Use the Scan button *(easiest)*
-Click **🔍 Scan** in the UI. LightWiz broadcasts a UDP packet and auto-populates discovered bulbs with their IP and MAC address.
+Click **🔍 Scan** in the UI. AmbieZ broadcasts a UDP packet and auto-populates discovered bulbs with their IP and MAC address.
 
 ### Option 2 — WiZ mobile app
 `App → Device → Settings → Device Info → IP Address`
