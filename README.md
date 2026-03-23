@@ -24,11 +24,11 @@
 | 🎨 **3 Color Algorithms** | Dominant (KMeans), Average, and Edge-Weighted color extraction |
 | 🌊 **Adaptive Smoothing** | Configurable exponential smoothing to prevent jarring flicker |
 | 🖥️ **Dark Modern UI** | PySide6 GUI with live color preview and real-time RGB readout |
-| 📡 **Auto Discovery** | UDP broadcast scan to automatically find WiZ bulbs on your network |
+| 📡 **Manual IP Entry** | Enter your WiZ bulb's IP address directly in the settings panel |
 | 🖥️ **Multi-Monitor** | Select which display to capture from a dropdown |
 | 💡 **Brightness Control** | Adjustable max brightness sent directly to the bulb |
 | 🔔 **System Tray** | Minimize to tray and run silently in the background |
-| 💾 **Config Persistence** | All settings auto-saved/loaded from `AmbienZ_config.json` |
+| 💾 **Config Persistence** | All settings auto-saved/loaded from `lightwiz_config.json` |
 
 ---
 
@@ -67,7 +67,7 @@ python main.py
 
 ### First-time setup
 
-1. **Find your bulb** — Click **🔍 Scan** to auto-discover WiZ bulbs on your network, or add the IP manually
+1. **Enter your bulb's IP** — Type the IP address of your WiZ bulb into the **Bulb IP Address** field (e.g. `192.168.0.100`)
 2. **Select your monitor** — Pick the display you want to capture from the dropdown
 3. **Tune your settings** — Adjust brightness, saturation, smoothing, and extraction mode
 4. **Click START SYNC** — Your bulb will immediately begin mirroring your screen
@@ -76,7 +76,7 @@ python main.py
 
 | Control | What it does |
 |---|---|
-| **🔍 Scan** | UDP broadcast to auto-discover WiZ bulbs and populate the dropdown |
+| **Bulb IP Address** | Manually enter the IP address of your WiZ smart bulb |
 | **Select Monitor** | Choose which display to capture (all connected monitors listed) |
 | **Max Brightness** | Sets the `dimming` value sent to the bulb (10–100%) |
 | **Saturation Boost** | Multiplies color saturation for more vivid output (1.0–3.0×) |
@@ -101,11 +101,11 @@ Weights pixels near the edges and borders of the screen more heavily. Great for 
 
 ## ⚙️ Configuration
 
-Settings are auto-saved to `AmbienZ_config.json` next to `main.py` whenever the app closes. The file is loaded automatically on next launch.
+Settings are auto-saved to `lightwiz_config.json` next to `main.py` whenever the app closes. The file is loaded automatically on next launch.
 
 | Key | Description |
 |-----|-------------|
-| `bulb_ip` | IP address of the selected WiZ bulb |
+| `bulb_ip` | IP address of the WiZ bulb |
 | `monitor_idx` | Index of the monitor to capture (1 = primary) |
 | `brightness` | Max brightness value sent to bulb (10–100) |
 | `saturation` | Saturation multiplier (stored as slider integer, divided by 10 on use) |
@@ -160,8 +160,8 @@ Minimizing the window hides AmbienZ to the system tray — sync continues runnin
 
 | Problem | Solution |
 |---------|----------|
-| Bulb not found by Scan | Some routers block UDP broadcast. Enter the IP manually in the dropdown |
-| Bulb not responding | Confirm the bulb and PC are on the same Wi-Fi network |
+| Bulb not responding | Confirm the bulb and PC are on the same Wi-Fi network and the IP is correct |
+| Wrong IP entered | Find the correct IP using the WiZ app or your router's device list (see below) |
 | High CPU usage | Switch to **Average** mode — it skips clustering entirely |
 | Colors feel washed out | Increase **Saturation Boost** (try 2.0–2.5) |
 | Too much flickering | Increase **Smoothing** toward 0.9 |
@@ -173,20 +173,54 @@ Minimizing the window hides AmbienZ to the system tray — sync continues runnin
 
 ## 📡 Finding Your Bulb's IP
 
-### Option 1 — Use the Scan button *(easiest)*
-Click **🔍 Scan** in the UI. AmbienZ broadcasts a UDP packet and auto-populates discovered bulbs with their IP and MAC address.
-
-### Option 2 — WiZ mobile app
+### Option 1 — WiZ mobile app *(easiest)*
 `App → Device → Settings → Device Info → IP Address`
 
-### Option 3 — Router admin panel
+### Option 2 — Router admin panel
 Log into your router (usually `192.168.0.1` or `192.168.1.1`) and look for a device named **WiZ** or **ESP** in the connected devices list.
+
+### Option 3 — ARP table (Windows)
+If the bulb is already on your network, open Command Prompt and run:
+```
+arp -a
+```
+Look for an entry with a MAC address starting with `d8:a0:1d` or `a8:bb:50` — these are common WiZ/Espressif prefixes.
 
 ### Option 4 — Network scanner
 Use [Advanced IP Scanner](https://www.advanced-ip-scanner.com/) (Windows) or run:
 ```bash
 nmap -sn 192.168.0.0/24
 ```
+Replace `192.168.0.0/24` with your actual subnet if different (e.g. `192.168.1.0/24`).
+
+Once you have the IP, enter it into the **Bulb IP Address** field in the app.
+
+---
+
+## 🖥️ Finding Your PC's IP Address
+
+Your PC and the WiZ bulb must be on the **same local network** (same router/Wi-Fi). Use your PC's IP to confirm this — both should share the same first three octets (e.g. `192.168.0.x`).
+
+### Windows
+Open Command Prompt and run:
+```
+ipconfig
+```
+Look for **IPv4 Address** under your active network adapter (Wi-Fi or Ethernet).
+
+### macOS
+```bash
+ipconfig getifaddr en0
+```
+Use `en1` instead if you're on Ethernet.
+
+### Linux
+```bash
+ip a
+```
+Look for `inet` under your active interface (e.g. `wlan0` or `eth0`).
+
+> **Example:** If your PC's IP is `192.168.0.50` and your bulb's IP is `192.168.0.100`, you're on the same subnet — everything should work. If they don't share the first three octets, check that both devices are connected to the same router.
 
 ---
 
@@ -202,6 +236,7 @@ Contributions are welcome!
 6. Open a Pull Request
 
 ### Ideas for contributions
+- [ ] Auto-discovery / UDP broadcast scan for WiZ bulbs
 - [ ] Multi-bulb sync (send to multiple IPs simultaneously)
 - [ ] Kalman filter for temporal stabilization
 - [ ] Scene presets (Movie / Gaming / Music / Ambient)
