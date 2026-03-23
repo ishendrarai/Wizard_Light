@@ -10,8 +10,9 @@ from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                                QSlider, QLabel, QPushButton, QLineEdit,
                                QGroupBox, QComboBox, QFrame, QSystemTrayIcon,
                                QMenu, QStyle)
-from PySide6.QtGui import QAction
+from PySide6.QtGui import QAction, QIcon
 from PySide6.QtCore import Qt, QThread, Signal, Slot, QEvent
+
 
 CONFIG_FILE = "lightwiz_config.json"
 BULB_PORT = 38899
@@ -195,9 +196,8 @@ class LightWizUI(QMainWindow):
 
     def setup_tray(self):
         self.tray_icon = QSystemTrayIcon(self)
-        icon = self.style().standardIcon(QStyle.StandardPixmap.SP_ComputerIcon)
+        icon = QIcon("Movie.ico") 
         self.tray_icon.setIcon(icon)
-
         tray_menu = QMenu()
         show_action = QAction("Show Settings", self)
         show_action.triggered.connect(self.showNormal)
@@ -327,6 +327,11 @@ class LightWizUI(QMainWindow):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    window = LightWizUI()
+    
+    # 1. Apply your specific .ico file globally
+    app_icon = QIcon("Movie.ico") 
+    app.setWindowIcon(app_icon)
+    
+    window = LightWizUI() # Or AmbienZUI if you renamed the class
     window.show()
     sys.exit(app.exec())

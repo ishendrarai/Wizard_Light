@@ -1,54 +1,39 @@
 # -*- mode: python ; coding: utf-8 -*-
-# AmbieZ.spec — PyInstaller build spec
-# Run with:  pyinstaller AmbieZ.spec
 
-block_cipher = None
 
 a = Analysis(
-    ['AmbieZ.py'],
+    ['AmbienZ.py'],
     pathex=[],
     binaries=[],
     datas=[],
-    hiddenimports=[
-        'PySide6.QtCore',
-        'PySide6.QtGui',
-        'PySide6.QtWidgets',
-        'mss',
-        'mss.windows',
-        'cv2',
-        'numpy',
-    ],
+    hiddenimports=[],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
     excludes=[],
-    win_no_prefer_redirects=False,
-    win_private_assemblies=False,
-    cipher=block_cipher,
     noarchive=False,
+    optimize=0,
 )
-
-pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
+pyz = PYZ(a.pure)
 
 exe = EXE(
     pyz,
     a.scripts,
     a.binaries,
-    a.zipfiles,
     a.datas,
     [],
-    name='AmbieZ',
+    name='AmbienZ',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
     upx=True,
     upx_exclude=[],
     runtime_tmpdir=None,
-    console=False,          # No console window (GUI app)
+    console=False,
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=None,              # Set to 'your_icon.ico' if you have one
+    icon=['Movie.ico'],
 )
