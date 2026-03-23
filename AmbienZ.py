@@ -14,7 +14,7 @@ from PySide6.QtGui import QAction, QIcon
 from PySide6.QtCore import Qt, QThread, Signal, Slot, QEvent
 
 
-CONFIG_FILE = "lightwiz_config.json"
+CONFIG_FILE = "ambienz_config.json"
 BULB_PORT = 38899
 
 
@@ -124,10 +124,10 @@ class SyncWorker(QThread):
 
 
 # --- MAIN UI ---
-class LightWizUI(QMainWindow):
+class AmbienZUI(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("LightWiz Pro")
+        self.setWindowTitle("AmbienZ")
         self.setMinimumWidth(450)
         self.worker = SyncWorker()
 
@@ -201,7 +201,7 @@ class LightWizUI(QMainWindow):
         tray_menu = QMenu()
         show_action = QAction("Show Settings", self)
         show_action.triggered.connect(self.showNormal)
-        quit_action = QAction("Quit LightWiz", self)
+        quit_action = QAction("Quit AmbienZ", self)
         quit_action.triggered.connect(QApplication.instance().quit)
 
         tray_menu.addAction(show_action)
@@ -220,7 +220,7 @@ class LightWizUI(QMainWindow):
             if self.windowState() & Qt.WindowState.WindowMinimized:
                 event.ignore()
                 self.hide()
-                self.tray_icon.showMessage("LightWiz Pro", "Running in background.",
+                self.tray_icon.showMessage("AmbienZ", "Running in background.",
                                            QSystemTrayIcon.MessageIcon.Information, 2000)
                 return
         super().changeEvent(event)
@@ -313,15 +313,112 @@ class LightWizUI(QMainWindow):
 
     def get_theme(self):
         return """
-            QMainWindow { background-color: #0f0f0f; }
-            QGroupBox { color: #aaa; border: 1px solid #222; margin-top: 15px; padding: 15px; font-weight: bold; }
-            QLabel { color: #eee; font-size: 13px; }
-            QLineEdit { background: #1a1a1a; color: white; border: 1px solid #333; padding: 6px; border-radius: 3px; }
-            QLineEdit:focus { border: 1px solid #0078d4; }
-            #preview { border: 2px solid #333; background-color: #000; }
-            #startBtn { background-color: #0078d4; color: white; padding: 12px; font-weight: bold; border-radius: 4px; }
-            #startBtn:checked { background-color: #d83b01; }
-            QComboBox { background: #1a1a1a; color: white; border: 1px solid #333; padding: 4px; }
+            /* Main Window & Background */
+            QMainWindow { 
+                background-color: #121212; 
+            }
+
+            /* Group Box (Settings area) */
+            QGroupBox { 
+                color: #e0e0e0; 
+                border: 1px solid #2a2a2a; 
+                margin-top: 15px; 
+                padding: 15px; 
+                font-weight: bold; 
+                border-radius: 5px;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                left: 10px;
+                padding: 0 5px;
+            }
+
+            /* Text Labels */
+            QLabel { 
+                color: #ffffff; 
+                font-size: 13px; 
+            }
+
+            /* Text Input Box */
+            QLineEdit { 
+                background: #1a1a1a; 
+                color: white; 
+                border: 1px solid #333; 
+                padding: 6px; 
+                border-radius: 4px; 
+            }
+            QLineEdit:focus { 
+                border: 1px solid #0078d4; /* Unified Blue */
+            }
+
+            /* Dropdown Menus */
+            QComboBox { 
+                background: #1a1a1a; 
+                color: white; 
+                border: 1px solid #333; 
+                padding: 5px; 
+                border-radius: 4px; 
+            }
+            QComboBox:focus { 
+                border: 1px solid #0078d4; /* Unified Blue */
+            }
+            QComboBox::drop-down {
+                border-left: 1px solid #333;
+                width: 25px;
+            }
+            QComboBox QAbstractItemView {
+                background-color: #1a1a1a;
+                color: white;
+                selection-background-color: #0078d4; /* Unified Blue */
+            }
+
+            /* Custom Sliders */
+            QSlider::groove:horizontal {
+                border: none;
+                height: 4px;
+                background: #444444;
+                border-radius: 2px;
+                margin: 10px 0;
+            }
+            QSlider::sub-page:horizontal {
+                background: #0078d4; /* Unified Blue */
+                border-radius: 2px;
+            }
+            QSlider::add-page:horizontal {
+                background: #555555; 
+                border-radius: 2px;
+            }
+            QSlider::handle:horizontal {
+                background: #1a1a1a;
+                border: 2px solid #0078d4; /* Unified Blue */
+                width: 12px;
+                height: 12px;
+                margin: -6px 0; 
+                border-radius: 8px; 
+            }
+
+            /* Preview Box */
+            #preview { 
+                border: 1px solid #2a2a2a; 
+                background-color: #000; 
+                border-radius: 6px;
+            }
+
+            /* Start/Stop Button */
+            #startBtn { 
+                background-color: #0078d4; /* Unified Blue */
+                color: white; 
+                padding: 12px; 
+                font-weight: bold; 
+                border-radius: 4px; 
+                border: none;
+            }
+            #startBtn:hover {
+                background-color: #008be8; /* Slightly lighter blue for hover */
+            }
+            #startBtn:checked { 
+                background-color: #d83b01; /* Warning Orange/Red when running */
+            }
         """
 
 
@@ -332,6 +429,6 @@ if __name__ == "__main__":
     app_icon = QIcon("Movie.ico") 
     app.setWindowIcon(app_icon)
     
-    window = LightWizUI() # Or AmbienZUI if you renamed the class
+    window = AmbienZUI()
     window.show()
     sys.exit(app.exec())
