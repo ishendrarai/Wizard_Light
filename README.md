@@ -4,6 +4,8 @@
 
 ### Real-Time Screen-to-WiZ Ambient Lighting Sync
 
+</div>
+
 **A sleek desktop app that captures your screen colors and syncs them live to WiZ smart bulbs over your local network — no cloud, no account, zero latency.**
 
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
@@ -15,31 +17,32 @@
 
 ---
 
-<div align="center">
-  <img src="images/AmbienZ_UI.png" width="400" heigh-"500" alt="My Image">
-</div>
+![AmbienZ UI](images/AmbienZ_UI.png)
 
-<hr>
+---
 
 ## ✨ Features
 
-| Feature                   | Description                                                     |
-| ------------------------- | --------------------------------------------------------------- |
-| 🎨 **3 Color Algorithms** | Dominant (KMeans), Average, and Edge-Weighted color extraction  |
-| 🌊 **Adaptive Smoothing** | Configurable exponential smoothing to prevent jarring flicker   |
-| 🖥️ **Dark Modern UI**     | PySide6 GUI with live color preview and real-time RGB readout   |
-| 📡 **Manual IP Entry**    | Enter your WiZ bulb's IP address directly in the settings panel |
-| 🖥️ **Multi-Monitor**      | Select which display to capture from a dropdown                 |
-| 💡 **Brightness Control** | Adjustable max brightness sent directly to the bulb             |
-| 🔔 **System Tray**        | Minimize to tray and run silently in the background             |
-| 💾 **Config Persistence** | All settings auto-saved/loaded from `lightwiz_config.json`      |
+| Feature                      | Description                                                               |
+| ---------------------------- | ------------------------------------------------------------------------- |
+| 🎨 **3 Color Algorithms**    | Histogram Dominant, Average, and Edge-Weighted color extraction           |
+| 🌊 **Adaptive Smoothing**    | Configurable exponential smoothing to prevent jarring flicker             |
+| 💡 **Multi-Bulb Sync**       | Add multiple WiZ bulb IPs — all receive the same color simultaneously     |
+| 🎮 **Adjustable FPS**        | Slider to control capture rate from 10 to 60 FPS                         |
+| 🎛️ **Gamma Correction**      | Per-session gamma slider (0.8–2.2) for accurate perceptual brightness     |
+| ⚡ **Frame-Skip Optimisation**| Skips UDP sends when color change is below threshold — reduces flicker    |
+| 🖥️ **Dark Modern UI**        | PySide6 GUI with live color preview, status dot, and real-time RGB readout|
+| 🖥️ **Multi-Monitor**         | Select which display to capture from a dropdown                           |
+| 💡 **Brightness Control**    | Adjustable max brightness sent directly to the bulb                       |
+| 🔔 **System Tray**           | Minimize to tray and run silently in the background                       |
+| 💾 **Config Persistence**    | All settings auto-saved/loaded from `ambienz_config.json`                 |
 
 ---
 
 ## 📋 Requirements
 
 - **Python** 3.10 or higher
-- **WiZ smart bulb** connected to your local Wi-Fi network
+- **WiZ smart bulb(s)** connected to your local Wi-Fi network
 - Windows 10/11 (primary), macOS, or Linux
 
 ---
@@ -62,7 +65,7 @@ pip install PySide6 mss opencv-python numpy
 ### 3. Run
 
 ```bash
-python main.py
+python ambienz.py
 ```
 
 ---
@@ -71,30 +74,32 @@ python main.py
 
 ### First-time setup
 
-1. **Enter your bulb's IP** — Type the IP address of your WiZ bulb into the **Bulb IP Address** field (e.g. `192.168.0.100`)
-2. **Select your monitor** — Pick the display you want to capture from the dropdown
-3. **Tune your settings** — Adjust brightness, saturation, smoothing, and extraction mode
-4. **Click START SYNC** — Your bulb will immediately begin mirroring your screen
+1. **Add your bulb(s)** — Type the IP address of each WiZ bulb into the **Bulbs** field and click **+ Add** (e.g. `192.168.0.100`). Repeat for every bulb you want to sync.
+2. **Select your monitor** — Pick the display you want to capture from the dropdown.
+3. **Tune your settings** — Adjust FPS, brightness, saturation, gamma, smoothing, and extraction mode.
+4. **Click START SYNC** — All bulbs will immediately begin mirroring your screen.
 
 ### Controls overview
 
-| Control               | What it does                                                               |
-| --------------------- | -------------------------------------------------------------------------- |
-| **Bulb IP Address**   | Manually enter the IP address of your WiZ smart bulb                       |
-| **Select Monitor**    | Choose which display to capture (all connected monitors listed)            |
-| **Max Brightness**    | Sets the `dimming` value sent to the bulb (10–100%)                        |
-| **Saturation Boost**  | Multiplies color saturation for more vivid output (1.0–3.0×)               |
-| **Smoothing**         | Controls temporal smoothing between frames (0 = instant, 0.99 = very slow) |
-| **Extraction Mode**   | Algorithm used to pick the screen color                                    |
-| **START / STOP SYNC** | Toggle the live sync loop on or off                                        |
+| Control               | What it does                                                                |
+| --------------------- | --------------------------------------------------------------------------- |
+| **Bulbs list**        | Add or remove WiZ bulb IPs. All listed bulbs receive every color update.    |
+| **Select Monitor**    | Choose which display to capture (all connected monitors listed)             |
+| **FPS**               | Sets how many frames per second the sync loop targets (10–60)               |
+| **Max Brightness**    | Sets the `dimming` value sent to the bulb (10–100%)                         |
+| **Saturation Boost**  | Multiplies color saturation for more vivid output (1.0–3.0×)                |
+| **Gamma**             | Gamma correction exponent applied in linear RGB space (0.8–2.2)             |
+| **Smoothing**         | Controls temporal smoothing between frames (0 = instant, 0.99 = very slow)  |
+| **Extraction Mode**   | Algorithm used to pick the screen color                                     |
+| **START / STOP SYNC** | Toggle the live sync loop on or off                                         |
 
 ---
 
 ## 🎨 Color Extraction Modes
 
-### Dominant (KMeans)
+### Dominant (Histogram)
 
-Uses OpenCV's K-Means clustering to find the most prominent color in the frame. Dark pixels are filtered out before clustering. Best for movies and games with distinct color regions.
+Quantises pixels into an 8×8×8 color bin grid and returns the center of the most-populated non-dark bin. Significantly faster than KMeans with comparable color accuracy — best for movies and games with distinct color regions.
 
 ### Average
 
@@ -102,28 +107,30 @@ Simple mean of all pixels in the captured frame. Lowest CPU usage — ideal if p
 
 ### Edge Weighted
 
-Weights pixels near the edges and borders of the screen more heavily. Great for content where the action sits at the frame edges.
+Weights pixels near the edges and borders of the screen more heavily. Great for content where the action sits at the frame edges (widescreen cinema, racing games).
 
 ---
 
 ## ⚙️ Configuration
 
-Settings are auto-saved to `lightwiz_config.json` next to `main.py` whenever the app closes. The file is loaded automatically on next launch.
+Settings are auto-saved to `ambienz_config.json` next to `ambienz.py` whenever the app closes, and loaded automatically on next launch.
 
-| Key           | Description                                                            |
-| ------------- | ---------------------------------------------------------------------- |
-| `bulb_ip`     | IP address of the WiZ bulb                                             |
-| `monitor_idx` | Index of the monitor to capture (1 = primary)                          |
-| `brightness`  | Max brightness value sent to bulb (10–100)                             |
-| `saturation`  | Saturation multiplier (stored as slider integer, divided by 10 on use) |
-| `smoothness`  | Smoothing factor (stored as 0–99, divided by 100 on use)               |
-| `mode`        | Extraction algorithm: `Dominant`, `Average`, or `Edge Weighted`        |
+| Key           | Description                                                             |
+| ------------- | ----------------------------------------------------------------------- |
+| `bulb_ips`    | List of WiZ bulb IP addresses                                           |
+| `fps`         | Target capture framerate (10–60)                                        |
+| `monitor_idx` | Index of the monitor to capture (1 = primary)                           |
+| `brightness`  | Max brightness value sent to bulb (10–100)                              |
+| `saturation`  | Saturation multiplier (stored as slider integer, divided by 10 on use)  |
+| `smoothness`  | Smoothing factor (stored as 0–99, divided by 100 on use)                |
+| `gamma`       | Gamma exponent (stored as slider integer, divided by 10 on use)         |
+| `mode`        | Extraction algorithm: `Dominant`, `Average`, or `Edge Weighted`         |
 
 ---
 
 ## 🧠 How It Works
 
-AmbienZ runs a high-frequency capture loop in a background thread (QThread):
+AmbienZ runs a high-frequency capture loop in a background QThread:
 
 ```
 Screen Frame (mss)
@@ -135,19 +142,25 @@ Resize to 160×90          (fast, low-memory processing)
 Crop black bars           (threshold-based edge detection)
       │
       ▼
-Color extraction          (KMeans / Average / Edge Weighted)
+Color extraction          (Histogram Dominant / Average / Edge Weighted)
       │
       ▼
-Gamma correction          (sRGB ↔ linear RGB pipeline, γ=2.2)
+Linear RGB conversion     (sRGB → linear, γ=2.2)
       │
       ▼
-Saturation boost          (linear RGB space)
+Gamma correction          (user-adjustable exponent, 0.8–2.2)
+      │
+      ▼
+Saturation boost          (scaled in linear RGB space)
       │
       ▼
 Exponential smoothing     (blends current frame with previous)
       │
       ▼
-UDP → WiZ Bulb            (setPilot JSON over port 38899)
+Frame-skip check          (skip if Δcolor < threshold)
+      │
+      ▼
+UDP → WiZ Bulb(s)         (setPilot JSON over port 38899, all IPs)
 ```
 
 The WiZ protocol is a simple JSON-over-UDP API on port `38899`. No cloud required.
@@ -165,16 +178,17 @@ Minimizing the window hides AmbienZ to the system tray — sync continues runnin
 
 ## 🛠️ Troubleshooting
 
-| Problem                | Solution                                                                       |
-| ---------------------- | ------------------------------------------------------------------------------ |
-| Bulb not responding    | Confirm the bulb and PC are on the same Wi-Fi network and the IP is correct    |
-| Wrong IP entered       | Find the correct IP using the WiZ app or your router's device list (see below) |
-| High CPU usage         | Switch to **Average** mode — it skips clustering entirely                      |
-| Colors feel washed out | Increase **Saturation Boost** (try 2.0–2.5)                                    |
-| Too much flickering    | Increase **Smoothing** toward 0.9                                              |
-| Slow / laggy response  | Lower **Smoothing** to 0.2–0.4                                                 |
-| Monitor not listed     | Reconnect the display and restart the app                                      |
-| Settings not saved     | Ensure the app is closed normally (not force-quit)                             |
+| Problem                 | Solution                                                                       |
+| ----------------------- | ------------------------------------------------------------------------------ |
+| Bulb not responding     | Confirm the bulb and PC are on the same Wi-Fi network and the IP is correct    |
+| Wrong IP entered        | Find the correct IP using the WiZ app or your router's device list (see below) |
+| High CPU usage          | Switch to **Average** mode, or lower the **FPS** slider                        |
+| Colors feel washed out  | Increase **Saturation Boost** (try 2.0–2.5)                                    |
+| Too much flickering     | Increase **Smoothing** toward 0.9                                              |
+| Slow / laggy response   | Lower **Smoothing** to 0.2–0.4, or raise **FPS**                               |
+| Colors too dark/bright  | Adjust the **Gamma** slider — lower values brighten, higher values darken      |
+| Monitor not listed      | Reconnect the display and restart the app                                      |
+| Settings not saved      | Ensure the app is closed normally (not force-quit)                             |
 
 ---
 
@@ -208,7 +222,7 @@ nmap -sn 192.168.0.0/24
 
 Replace `192.168.0.0/24` with your actual subnet if different (e.g. `192.168.1.0/24`).
 
-Once you have the IP, enter it into the **Bulb IP Address** field in the app.
+Once you have the IP, enter it into the **Bulbs** field and click **+ Add**.
 
 ---
 
@@ -217,8 +231,6 @@ Once you have the IP, enter it into the **Bulb IP Address** field in the app.
 Your PC and the WiZ bulb must be on the **same local network** (same router/Wi-Fi). Use your PC's IP to confirm this — both should share the same first three octets (e.g. `192.168.0.x`).
 
 ### Windows
-
-Open Command Prompt and run:
 
 ```
 ipconfig
@@ -259,13 +271,12 @@ Contributions are welcome!
 
 ### Ideas for contributions
 
-- [ ] Auto-discovery / UDP broadcast scan for WiZ bulbs
-- [ ] Multi-bulb sync (send to multiple IPs simultaneously)
 - [ ] Kalman filter for temporal stabilization
 - [ ] Scene presets (Movie / Gaming / Music / Ambient)
 - [ ] Color temperature (Kelvin) white-point adjustment
 - [ ] Custom screen region selector (drag-to-select)
 - [ ] Audio reactive mode (mic input → color)
+- [ ] Explicit bulb off-command when screen goes dark
 - [ ] WLED / Govee / Tapo protocol support
 
 ---
@@ -280,15 +291,11 @@ This project is licensed under the **MIT License** — see the [LICENSE](LICENSE
 
 - [pywizlight](https://github.com/sbidy/pywizlight) — WiZ UDP protocol reference
 - [mss](https://github.com/BoboTiG/python-mss) — Fast cross-platform screen capture
-- [OpenCV](https://opencv.org/) — KMeans clustering and image processing
+- [OpenCV](https://opencv.org/) — Image processing
 - [PySide6 / Qt](https://doc.qt.io/qtforpython/) — GUI framework
 
 ---
 
-<div align="center">
-
 Made with ❤️ for smart home enthusiasts
 
 ⭐ **Star this repo if you find it useful!**
-
-</div>
