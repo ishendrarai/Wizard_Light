@@ -17,7 +17,7 @@
 
 ---
 
-![AmbienZ UI](images/AmbienZ_UI.png)
+<img src="images/AmbienZ_UI.png" width="600" height="1000" alt="AmbienZ UI">
 
 </div>
 
