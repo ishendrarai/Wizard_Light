@@ -17,7 +17,7 @@
 
 ---
 
-<img src="" width="600" height="1000" alt="AmbienZ UI">
+<img src="images/AmbienZ_UI.png" width="600" height="1000" alt="AmbienZ UI">
 
 </div>
 
