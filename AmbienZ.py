@@ -15,6 +15,8 @@ from PySide6.QtWidgets import (
 from PySide6.QtGui import QAction, QIcon, QColor
 from PySide6.QtCore import Qt, QThread, Signal, Slot, QEvent
 
+from color_temperature import kelvin_to_multipliers
+
 
 CONFIG_FILE = "ambienz_config.json"
 BULB_PORT = 38899
@@ -63,7 +65,6 @@ def histogram_dominant(img: np.ndarray, dark_threshold: int = 20) -> np.ndarray:
     return np.array([r, g, b], dtype=np.float32)
 
 
-
 # ---------------------------------------------------------------------------
 # SYNC WORKER  (QThread)
 # ---------------------------------------------------------------------------
@@ -84,6 +85,7 @@ class SyncWorker(QThread):
             "dark_threshold": 20,
             "monitor_idx": 1,
             "gamma": 1.0,
+            "kelvin": 6_500,          # NEW – neutral daylight by default
         }
         self.prev_rgb = np.zeros(3, dtype=np.float64)
         self.prev_sent_rgb = np.full(3, -999.0)        # force first send
@@ -138,8 +140,16 @@ class SyncWorker(QThread):
                 # Saturation
                 mean_lin = np.mean(lin_rgb)
                 lin_rgb = mean_lin + (lin_rgb - mean_lin) * self.params["saturation"]
+                np.clip(lin_rgb, 0.0, 1.0, out=lin_rgb)
 
-                # Temporal smoothing
+                # ── NEW: Colour temperature white-point adjustment ────────
+                kelvin = float(self.params.get("kelvin", 6_500))
+                r_k, g_k, b_k = kelvin_to_multipliers(kelvin)
+                lin_rgb = lin_rgb * np.array([r_k, g_k, b_k])
+                np.clip(lin_rgb, 0.0, 1.0, out=lin_rgb)
+                # ─────────────────────────────────────────────────────────
+
+                # Temporal smoothing  (operates on adjusted linear colours)
                 smooth = self.params["smoothness"]
                 self.prev_rgb = self.prev_rgb * smooth + lin_rgb * (1.0 - smooth)
 
@@ -282,11 +292,13 @@ class AmbienZUI(QMainWindow):
         ctrl_layout.addWidget(self.monitor_combo)
 
         # Sliders
-        self.fps_slider      = self._add_slider(ctrl_layout, "FPS",        10, 60,  40, divisor=1,   suffix="")
-        self.bright_slider   = self._add_slider(ctrl_layout, "Brightness", 10, 100, 100,divisor=1,   suffix="%")
-        self.sat_slider      = self._add_slider(ctrl_layout, "Saturation", 10, 30,  14, divisor=10,  suffix="×")
-        self.smooth_slider   = self._add_slider(ctrl_layout, "Smoothing",  0,  99,  60, divisor=100, suffix="")
-        self.gamma_slider    = self._add_slider(ctrl_layout, "Gamma",      8,  22,  10, divisor=10,  suffix="")
+        self.fps_slider    = self._add_slider(ctrl_layout, "FPS",               10, 60,     40,    divisor=1,   suffix="")
+        self.bright_slider = self._add_slider(ctrl_layout, "Brightness",        10, 100,    100,   divisor=1,   suffix="%")
+        self.sat_slider    = self._add_slider(ctrl_layout, "Saturation",        10, 30,     14,    divisor=10,  suffix="×")
+        self.smooth_slider = self._add_slider(ctrl_layout, "Smoothing",         0,  99,     60,    divisor=100, suffix="")
+        self.gamma_slider  = self._add_slider(ctrl_layout, "Gamma",             8,  22,     10,    divisor=10,  suffix="")
+        # NEW – Colour Temperature slider
+        self.kelvin_slider = self._add_slider(ctrl_layout, "Color Temp",        1_000, 20_000, 6_500, divisor=1, suffix=" K")
 
         # Extraction mode
         self.mode_combo = QComboBox()
@@ -358,14 +370,15 @@ class AmbienZUI(QMainWindow):
     def _sync_params(self):
         monitor_data = self.monitor_combo.currentData()
         self.worker.params.update({
-            "bulb_ips":     self._get_bulb_ips(),
-            "fps":          self.fps_slider.value(),
-            "brightness":   self.bright_slider.value(),
-            "saturation":   self.sat_slider.value() / 10.0,
-            "smoothness":   self.smooth_slider.value() / 100.0,
-            "gamma":        self.gamma_slider.value() / 10.0,
-            "mode":         self.mode_combo.currentText(),
-            "monitor_idx":  monitor_data if monitor_data is not None else 1,
+            "bulb_ips":    self._get_bulb_ips(),
+            "fps":         self.fps_slider.value(),
+            "brightness":  self.bright_slider.value(),
+            "saturation":  self.sat_slider.value() / 10.0,
+            "smoothness":  self.smooth_slider.value() / 100.0,
+            "gamma":       self.gamma_slider.value() / 10.0,
+            "kelvin":      self.kelvin_slider.value(),          # NEW
+            "mode":        self.mode_combo.currentText(),
+            "monitor_idx": monitor_data if monitor_data is not None else 1,
         })
         self.bulb_count_label.setText(f"Bulbs: {len(self._get_bulb_ips())}")
 
@@ -388,9 +401,9 @@ class AmbienZUI(QMainWindow):
     # -----------------------------------------------------------------------
     def _set_status(self, state: str, msg: str = ""):
         state_cfg = {
-            "idle":      ("#aaaaaa", "Idle"),
-            "syncing":   ("#0078d4", "Syncing"),
-            "error":     ("#d83b01", "Error"),
+            "idle":    ("#aaaaaa", "Idle"),
+            "syncing": ("#0078d4", "Syncing"),
+            "error":   ("#d83b01", "Error"),
         }
         color, label = state_cfg.get(state, ("#aaaaaa", state))
         self.status_dot.setStyleSheet(f"color: {color}; font-size: 18px;")
@@ -422,24 +435,22 @@ class AmbienZUI(QMainWindow):
             with open(CONFIG_FILE) as f:
                 cfg = json.load(f)
 
-            # Bulbs
             for ip in cfg.get("bulb_ips", []):
                 if ip and not self._bulb_exists(ip):
                     self.bulb_list.addItem(ip)
 
-            # Monitor
             if cfg.get("monitor_idx") is not None:
                 idx = self.monitor_combo.findData(cfg["monitor_idx"])
                 if idx >= 0:
                     self.monitor_combo.setCurrentIndex(idx)
 
-            # Sliders (guard against missing keys)
             _s = lambda key, slider: slider.setValue(cfg[key]) if cfg.get(key) is not None else None
-            _s("fps", self.fps_slider)
+            _s("fps",        self.fps_slider)
             _s("brightness", self.bright_slider)
             _s("saturation", self.sat_slider)
             _s("smoothness", self.smooth_slider)
-            _s("gamma", self.gamma_slider)
+            _s("gamma",      self.gamma_slider)
+            _s("kelvin",     self.kelvin_slider)    # NEW
 
             if cfg.get("mode"):
                 self.mode_combo.setCurrentText(cfg["mode"])
@@ -455,6 +466,7 @@ class AmbienZUI(QMainWindow):
             "saturation":  self.sat_slider.value(),
             "smoothness":  self.smooth_slider.value(),
             "gamma":       self.gamma_slider.value(),
+            "kelvin":      self.kelvin_slider.value(),   # NEW
             "mode":        self.mode_combo.currentText(),
             "monitor_idx": self.monitor_combo.currentData(),
         }
@@ -602,7 +614,7 @@ class AmbienZUI(QMainWindow):
             border-radius: 5px;
             border: none;
         }
-        #startBtn:hover  { background-color: #1a8ae6; }
+        #startBtn:hover   { background-color: #1a8ae6; }
         #startBtn:checked { background-color: #d83b01; }
         #smallBtn {
             background-color: #1e1e1e;
@@ -612,7 +624,7 @@ class AmbienZUI(QMainWindow):
             border-radius: 4px;
             font-size: 11px;
         }
-        #smallBtn:hover { background-color: #2a2a2a; border-color: #0078d4; }
+        #smallBtn:hover    { background-color: #2a2a2a; border-color: #0078d4; }
         #smallBtn:disabled { color: #555; }
         """
 
