@@ -9,15 +9,16 @@
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
 [![PySide6](https://img.shields.io/badge/GUI-PySide6-41cd52?style=flat-square&logo=qt&logoColor=white)](https://doc.qt.io/qtforpython/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow?style=flat-square)](LICENSE)
-[![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey?style=flat-square)]()\
+[![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey?style=flat-square)]()
+[![CI](https://img.shields.io/github/actions/workflow/status/ishendrarai/AmbienZ/ci.yml?branch=main&style=flat-square&label=CI)](https://github.com/ishendrarai/AmbienZ/actions)\
 
-[Features](#-features) · [Requirements](#-requirements) · [Installation](#-installation) · [Usage](#-usage) · [Configuration](#-configuration) · [Troubleshooting](#-troubleshooting)
+[Features](#-features) · [Requirements](#-requirements) · [Installation](#-installation) · [Usage](#-usage) · [Configuration](#-configuration) · [Troubleshooting](#-troubleshooting) · [Changelog](CHANGELOG.md)
 
 
 
 ---
 
-<img src="images/AmbienZ_UI.png" width="600" height="1000" alt="AmbienZ UI">
+<img src="images/AmbienZ_UI.png" width="600" alt="AmbienZ UI">
 
 </div>
 
@@ -44,6 +45,8 @@
 
 ## 📋 Requirements
 
+> ⚠️ **Platform support:** Fully supported on **Windows 10/11**. macOS and Linux are experimental — some features (e.g. system tray, screen capture backend) may behave differently.
+
 - **Python** 3.10 or higher
 - **WiZ smart bulb(s)** connected to your local Wi-Fi network
 - Windows 10/11 (primary), macOS, or Linux
@@ -59,11 +62,19 @@ git clone https://github.com/ishendrarai/AmbienZ.git
 cd AmbienZ
 ```
 
-### 2. Install dependencies
+### 2. Create a virtual environment and install dependencies
 
 ```bash
-pip install PySide6 mss opencv-python numpy
+python -m venv .venv
+# Windows:
+.venv\Scripts\activate
+# macOS/Linux:
+source .venv/bin/activate
+
+pip install -r requirements.txt
 ```
+
+> A `requirements.txt` is included with pinned versions of all dependencies (`PySide6`, `mss`, `opencv-python`, `numpy`) to ensure reproducible installs.
 
 ### 3. Run
 
@@ -297,12 +308,32 @@ Look for `inet` under your active interface (e.g. `wlan0` or `eth0`).
 
 Contributions are welcome!
 
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/your-feature-name`
-3. Make your changes and test them
-4. Commit: `git commit -m "Add your feature"`
-5. Push: `git push origin feature/your-feature-name`
-6. Open a Pull Request
+### Setting up for development
+
+```bash
+git clone https://github.com/ishendrarai/AmbienZ.git
+cd AmbienZ
+python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+python AmbienZ.py   # verify the app launches correctly before making changes
+```
+
+### Workflow
+
+1. **Open an issue first** — describe the bug or feature before writing code, so we can discuss approach
+2. Fork the repository
+3. Create a feature branch: `git checkout -b feature/your-feature-name`
+4. Make your changes and test them manually
+5. Format your code with [Black](https://black.readthedocs.io/): `black .`
+6. Commit: `git commit -m "Add your feature"`
+7. Push: `git push origin feature/your-feature-name`
+8. Open a Pull Request with a clear description of what changed and why
+
+### Code style
+
+- **Formatter:** [Black](https://black.readthedocs.io/) (default settings)
+- **Naming:** `snake_case` for variables and functions, `PascalCase` for Qt widget subclasses
+- Keep UI logic in the `MainWindow` class; keep color math in dedicated modules
 
 ### Ideas for contributions
 
